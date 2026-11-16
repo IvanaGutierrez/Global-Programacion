@@ -1,0 +1,254 @@
+### Variables de Entorno y Configuración Base
+@baseUrl = http://127.0.0.1:8000
+
+###############################################################################
+# HEALTHCHECKS
+###############################################################################
+
+### Health Live (No toca la base de datos)
+# Esperado: HTTP 200 OK -> {"estado": "vivo"}
+GET {{baseUrl}}/health/live
+
+### Health Ready (Verifica conexión ejecutando SELECT 1 en PostgreSQL)
+# Esperado: HTTP 200 OK -> {"estado": "listo", "database": "conectada"}
+GET {{baseUrl}}/health/ready
+
+
+###############################################################################
+# CASO C-01: Parámetro de ruta que no es entero
+###############################################################################
+
+### C-01: Parámetro de ruta alfanumérico en libros
+# Qué se demuestra: FastAPI valida el tipo 'int' en la ruta y rechaza antes de ejecutar el handler.
+# Esperado: HTTP 422 Unprocessable Entity
+GET {{baseUrl}}/libros/abc
+
+### C-01 (variante): Parámetro de ruta alfanumérico en editoriales
+# Esperado: HTTP 422 Unprocessable Entity
+GET {{baseUrl}}/editoriales/no-es-entero
+
+
+###############################################################################
+# CASO C-02: ISBN o Email repetido (Garantía de Unicidad por la BD)
+###############################################################################
+
+### C-02A: Alta de libro con ISBN ya existente en la base de datos (RN-01)
+# Qué se demuestra: Delegación de unicidad en PostgreSQL e intercepción de IntegrityError -> 409 con mensaje limpio (RN-12).
+# Esperado: HTTP 409 Conflict
+POST {{baseUrl}}/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-07-0001-0",
+  "titulo": "Rayuela Edición Duplicada",
+  "precio": "25000.00",
+  "stock": 10,
+  "editorial_id": 1,
+  "genero_id": 1,
+  "autores": [
+    { "autor_id": 1, "rol": "autor", "orden": 1 }
+  ]
+}
+
+### C-02B: Alta de cliente con email ya existente (RN-02)
+# Esperado: HTTP 409 Conflict
+POST {{baseUrl}}/clientes/
+Content-Type: application/json
+
+{
+  "nombre": "Tomás Ríos Clon",
+  "email": "tomas@example.com"
+}
+
+
+###############################################################################
+# CASO C-03: Segundo perfil para el mismo cliente (Relación 1 a 1 y RN-09)
+###############################################################################
+
+### C-03A: Crear primer perfil para Cliente 1 (Ejecutar primero)
+# Esperado: HTTP 201 Created -> {"id": 1, "telefono": "11-4567-8901", "direccion": "Av. Corrientes 1234"}
+POST {{baseUrl}}/clientes/1/perfil
+Content-Type: application/json
+
+{
+  "telefono": "11-4567-8901",
+  "direccion": "Av. Corrientes 1234"
+}
+
+### C-03B: Intentar crear un segundo perfil para el Cliente 1 (Ejecutar a continuación)
+# Qué se demuestra: Restricción UNIQUE en perfil_cliente.cliente_id previene duplicar la relación 1 a 1.
+# Esperado: HTTP 409 Conflict
+POST {{baseUrl}}/clientes/1/perfil
+Content-Type: application/json
+
+{
+  "telefono": "11-9999-8888",
+  "direccion": "Calle Falsa 123"
+}
+
+
+###############################################################################
+# CASO C-04: Libro con editorial o autor inexistente (Sin SELECT previo)
+###############################################################################
+
+### C-04A: Libro con editorial_id inexistente (9999)
+# Qué se demuestra: No se consulta si la editorial existe antes de insertar; la FK falla en PostgreSQL y se traduce a 409.
+# Esperado: HTTP 409 Conflict
+POST {{baseUrl}}/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-99-9999-1",
+  "titulo": "Libro Fantasma Editorial",
+  "precio": "15000.00",
+  "stock": 5,
+  "editorial_id": 9999,
+  "genero_id": 1,
+  "autores": [
+    { "autor_id": 1, "rol": "autor", "orden": 1 }
+  ]
+}
+
+### C-04B: Libro con autor_id inexistente (9999)
+# Esperado: HTTP 409 Conflict
+POST {{baseUrl}}/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-99-9999-2",
+  "titulo": "Libro Fantasma Autor",
+  "precio": "15000.00",
+  "stock": 5,
+  "editorial_id": 1,
+  "genero_id": 1,
+  "autores": [
+    { "autor_id": 9999, "rol": "autor", "orden": 1 }
+  ]
+}
+
+
+###############################################################################
+# CASO C-05: Venta con libro o cliente inexistente
+###############################################################################
+
+### C-05A: Venta con cliente_id inexistente (9999)
+# Qué se demuestra: Captura de clave foránea inválida de cliente en PostgreSQL -> 409 Conflict.
+# Esperado: HTTP 409 Conflict
+POST {{baseUrl}}/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 9999,
+  "renglones": [
+    { "libro_id": 1, "cantidad": 1 }
+  ]
+}
+
+### C-05B: Venta con libro_id inexistente (9999)
+# Qué se demuestra: Detección en consulta de catálogo de libros -> 409 Conflict.
+# Esperado: HTTP 409 Conflict
+POST {{baseUrl}}/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 2,
+  "renglones": [
+    { "libro_id": 9999, "cantidad": 1 }
+  ]
+}
+
+
+###############################################################################
+# CASO C-06: Venta válida con dos renglones (Cálculo en Servidor y RN-04 a RN-07)
+###############################################################################
+
+### C-06: Crear venta para Cliente 2 con Libros 1 (cant 2) y 4 (cant 1)
+# Qué se demuestra:
+# - Precios unitarios no viajan en el DTO, se copian de la base de datos (25000.00 y 27000.00) (RN-06).
+# - Total calculado en el servidor: 2 * 25000 + 1 * 27000 = 77000.00 (RN-07).
+# - BackgroundTasks dispara el aviso asincrónico tras responder (Ejercicio 6).
+# Esperado: HTTP 201 Created -> total "77000.00"
+POST {{baseUrl}}/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 2,
+  "renglones": [
+    { "libro_id": 1, "cantidad": 2 },
+    { "libro_id": 4, "cantidad": 1 }
+  ]
+}
+
+
+###############################################################################
+# CASO C-07: Detalle de Libro y Venta sin N+1 (Carga Anticipada)
+###############################################################################
+
+### C-07A: Detalle de libro con editorial, género y autores
+# Qué se demuestra: joinedload y selectinload generan un número fijo y constante de consultas SQL en consola (SQL_ECHO=true).
+# Esperado: HTTP 200 OK
+GET {{baseUrl}}/libros/1
+
+### C-07B: Detalle de venta con cliente y renglones
+# Qué se demuestra: joinedload y selectinload resuelven cliente y renglones con libros en consultas fijas.
+# Esperado: HTTP 200 OK
+GET {{baseUrl}}/ventas/1
+
+
+###############################################################################
+# CASO C-08: Búsqueda por título con texto SQL injection ' OR '1'='1
+###############################################################################
+
+### C-08: Búsqueda segura con parámetro ligado
+# Qué se demuestra: La búsqueda usa parámetros ligados de SQLAlchemy (ILIKE) y nunca concatenación de texto.
+# La inyección es tratada como literal y no coincide con ningún título.
+# Esperado: HTTP 200 OK -> Lista vacía []
+GET {{baseUrl}}/libros/?titulo=%27%20OR%20%271%27%3D%271
+
+
+###############################################################################
+# OPERACIONES ADICIONALES DEL CATÁLOGO Y CRUD
+###############################################################################
+
+### Listar editoriales paginadas (RN-10)
+# Esperado: HTTP 200 OK
+GET {{baseUrl}}/editoriales/?limit=10&offset=0
+
+### Libros de una editorial
+# Esperado: HTTP 200 OK
+GET {{baseUrl}}/editoriales/1/libros
+
+### Listar géneros
+# Esperado: HTTP 200 OK
+GET {{baseUrl}}/generos/
+
+### Libros de un género
+# Esperado: HTTP 200 OK
+GET {{baseUrl}}/generos/1/libros
+
+### Libros con rol y orden de un autor
+# Esperado: HTTP 200 OK
+GET {{baseUrl}}/autores/1/libros
+
+### Actualizar parcialmente (PATCH) un libro
+# Esperado: HTTP 200 OK
+PATCH {{baseUrl}}/libros/1
+Content-Type: application/json
+
+{
+  "precio": "26000.00"
+}
+
+### Ventas de un cliente específico
+# Esperado: HTTP 200 OK
+GET {{baseUrl}}/clientes/2/ventas
+
+### Intentar modificar una venta con PATCH (RN-08)
+# Qué se demuestra: Las ventas no se pueden modificar.
+# Esperado: HTTP 405 Method Not Allowed
+PATCH {{baseUrl}}/ventas/1
+Content-Type: application/json
+
+{
+  "total": "100.00"
+}

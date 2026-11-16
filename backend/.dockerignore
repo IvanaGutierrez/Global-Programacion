@@ -1,0 +1,25 @@
+# Exclusión estricta de secretos y configuración local
+.env
+*.env
+
+# Entorno virtual y cache
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Control de versiones
+.git
+.gitignore
+
+# Pruebas y evidencias (no van dentro de la imagen de producción)
+test/
+evidencia/
+
+# Documentación no necesaria en runtime
+README.md
+DEPLOY.md
+Parcial_Cap1a4_Consigna.pdf
+*.zip

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Historial — Librería Ejemplo</title>
+  <link rel="stylesheet" href="css/estilos.css">
+  <script src="js/api.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Librería Ejemplo</h1>
+    <p>Maqueta multipágina — Ejercicio 1 (estructura HTML)</p>
+    <nav aria-label="Navegación principal">
+      <ul>
+        <li><a href="index.html">Catálogo</a></li>
+        <li><a href="libros.html">Libros</a></li>
+        <li><a href="clientes.html">Clientes</a></li>
+        <li><a href="ventas.html">Ventas</a></li>
+        <li><a href="historial.html" class="activo" aria-current="page">Historial</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main>
+    <section aria-labelledby="titulo-historial">
+      <h2 id="titulo-historial">Historial de ventas</h2>
+      <div class="tabla-contenedor">
+        <table id="historial-listado">
+          <caption>Ventas registradas</caption>
+          <thead>
+            <tr>
+              <th scope="col">Id</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Cliente</th>
+              <th scope="col">Total</th>
+              <th scope="col">Detalle</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="historial-paginacion" class="paginacion" style="display: flex; gap: 1rem; align-items: center; margin: 1rem 0;">
+        <button type="button" id="btn-historial-prev" disabled>Anterior</button>
+        <span id="historial-pagina-info">Página 1</span>
+        <button type="button" id="btn-historial-next" disabled>Siguiente</button>
+      </div>
+      <p id="historial-vacio">No hay ventas registradas.</p>
+      <section aria-labelledby="titulo-detalle">
+        <h3 id="titulo-detalle">Detalle de la venta</h3>
+        <div id="historial-detalle"></div>
+      </section>
+      <p id="msg-ok" hidden></p>
+      <p id="msg-error" hidden></p>
+    </section>
+  </main>
+  <footer>
+    <p>Librería Ejemplo — Maqueta Ejercicio 1. Datos de ejemplo — ficticios.</p>
+  </footer>
+</body>
+</html>

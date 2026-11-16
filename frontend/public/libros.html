@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Libros — Librería Ejemplo</title>
+  <link rel="stylesheet" href="css/estilos.css">
+  <script src="js/api.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Librería Ejemplo</h1>
+    <p>Maqueta multipágina — Ejercicio 1 (estructura HTML)</p>
+    <nav aria-label="Navegación principal">
+      <ul>
+        <li><a href="index.html">Catálogo</a></li>
+        <li><a href="libros.html" class="activo" aria-current="page">Libros</a></li>
+        <li><a href="clientes.html">Clientes</a></li>
+        <li><a href="ventas.html">Ventas</a></li>
+        <li><a href="historial.html">Historial</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main>
+    <section aria-labelledby="titulo-libros">
+      <h2 id="titulo-libros">Libros</h2>
+      <p>Datos de ejemplo — ficticios.</p>
+      <form id="form-libro" action="#" method="post">
+        <fieldset>
+          <legend>Registrar libro</legend>
+          <p>
+            <label for="libro-titulo">Título</label>
+            <input type="text" id="libro-titulo" name="libro-titulo" required>
+          </p>
+          <p>
+            <label for="libro-isbn">ISBN</label>
+            <input type="text" id="libro-isbn" name="libro-isbn" required>
+          </p>
+          <p>
+            <label for="libro-precio">Precio</label>
+            <input type="number" id="libro-precio" name="libro-precio" min="0" step="0.01" required>
+          </p>
+          <p>
+            <label for="libro-stock">Stock</label>
+            <input type="number" id="libro-stock" name="libro-stock" min="0" value="10" required>
+          </p>
+          <p>
+            <label for="libro-editorial">Editorial</label>
+            <select id="libro-editorial" name="libro-editorial">
+            </select>
+          </p>
+          <p>
+            <label for="libro-genero">Género</label>
+            <select id="libro-genero" name="libro-genero">
+            </select>
+          </p>
+          <div id="seccion-autores" style="margin-bottom: 1rem; padding: 0.75rem; border: 1px solid var(--borde); border-radius: 4px; background: var(--superficie);">
+            <label for="autor-id-buscar"><strong>Autores del libro</strong> (consulta por ID)</label>
+            <div style="display: flex; gap: 0.5rem; margin: 0.5rem 0; flex-wrap: wrap; align-items: center;">
+              <input type="number" id="autor-id-buscar" placeholder="ID autor" min="1" style="width: 100px;">
+              <button type="button" id="btn-buscar-autor">Buscar autor</button>
+              <select id="autor-rol-select" title="Rol de autoría">
+                <option value="autor">Autor</option>
+                <option value="coautor">Coautor</option>
+                <option value="traductor">Traductor</option>
+                <option value="ilustrador">Ilustrador</option>
+              </select>
+              <input type="number" id="autor-orden-input" placeholder="Orden" value="1" min="1" style="width: 75px;" title="Orden de autoría">
+              <button type="button" id="btn-agregar-autoria">Agregar autoría</button>
+            </div>
+            <p id="autor-busqueda-info" class="ayuda" style="margin: 0.25rem 0;"></p>
+            <ul id="lista-autores-agregados" style="margin: 0.5rem 0; padding-left: 1.25rem;">
+              <li id="sin-autores-aviso" style="color: var(--texto-secundario);">No se han agregado autores aún (mínimo 1 requerido).</li>
+            </ul>
+          </div>
+          <p style="display: none;">
+            <label for="libro-autores">Autores</label>
+            <select id="libro-autores" name="libro-autores" multiple size="3">
+            </select>
+          </p>
+          <p>
+            <button type="submit">Registrar libro</button>
+          </p>
+        </fieldset>
+      </form>
+      <p id="msg-ok">Libro registrado (ejemplo).</p>
+      <p id="msg-error">No se pudo registrar el libro (ejemplo).</p>
+      <h3>Listado de libros registrados</h3>
+      <div class="tabla-contenedor">
+        <table id="libros-listado">
+          <caption>Libros registrados (ejemplo ficticio)</caption>
+          <thead>
+            <tr>
+              <th scope="col">Título</th>
+              <th scope="col">ISBN</th>
+              <th scope="col">Editorial</th>
+              <th scope="col">Género</th>
+              <th scope="col">Autores</th>
+              <th scope="col">Precio</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+      <p id="libros-vacio">No hay registros de libros (ejemplo).</p>
+    </section>
+  </main>
+  <footer>
+    <p>Librería Ejemplo — Maqueta Ejercicio 1. Datos de ejemplo — ficticios.</p>
+  </footer>
+</body>
+</html>
