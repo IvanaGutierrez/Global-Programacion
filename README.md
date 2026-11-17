@@ -2,7 +2,21 @@
 
 ## Proyecto: Librería de Barrio Web Integrada
 
-Sistema web completo integrado y contenerizado para la gestión del catálogo, clientes, ventas e historial de la Librería de Barrio. Conecta el frontend desarrollado con **HTML5, CSS3 y JavaScript nativo** servido a través de un proxy reverso **Nginx**, con un backend asincrónico en **FastAPI**, **SQLModel** y **PostgreSQL**, desplegable en VPS mediante **Easypanel**.
+Sistema web completo integrado y contenerizado para la gestión del catálogo, clientes, ventas e historial de la Librería de Barrio. Conecta el frontend desarrollado con **HTML5, CSS3 y JavaScript nativo** servido a través de un proxy reverso **Nginx**, con un backend asincrónico en **FastAPI**, **SQLModel** y **PostgreSQL**, desplegado en producción en VPS mediante **Easypanel**.
+
+---
+
+## 🌐 Enlaces de Producción y Repositorio
+
+* **URL Pública del Frontend (HTTPS):** [https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host](https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host)
+* **Endpoint de Salud / Health Check (/api):** [https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host/api/health/ready](https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host/api/health/ready)
+* **Repositorio Oficial en GitHub:** [https://github.com/IvanaGutierrez/Global-Programacion](https://github.com/IvanaGutierrez/Global-Programacion)
+* **Proyecto en Easypanel:** `mananaarranco`
+  * `libreria-ivy-db`: Base de datos PostgreSQL 16 privada.
+  * `libreria-ivy-backend`: API FastAPI en puerto 8000 con `CORS_ORIGINS=https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host`.
+  * `libreria-ivy-frontend`: Servidor Nginx en puerto 80 con `API_UPSTREAM=mananaarranco_libreria-ivy-backend:8000`.
+
+> 🔒 **Aclaración de Seguridad:** Por políticas de seguridad y consigna de la cátedra, **no se exponen contraseñas ni la cadena `DATABASE_URL` real** en el repositorio ni en la documentación. Todas las credenciales permanecen en las variables de entorno privadas configuradas en Easypanel.
 
 ---
 
@@ -19,12 +33,19 @@ Sistema web completo integrado y contenerizado para la gestión del catálogo, c
 
 ---
 
+## 📑 Documentos de Entrega y Evidencias
+
+* 📄 **Informe Integrador de Evaluación:** [`Informe_Global_Programacion_Manana-Arranco.pdf`](file:///c:/Users/Ivana%20Gutierrez/Documents/Global-Programacion/Informe_Global_Programacion_Manana-Arranco.pdf) ubicado en la raíz del proyecto.
+* 📑 **Evidencias de Casos de Prueba (G-01 a G-07):** [`evidencia/Evidencias_Global_Programacion_G01_G07.docx`](file:///c:/Users/Ivana%20Gutierrez/Documents/Global-Programacion/evidencia/Evidencias_Global_Programacion_G01_G07.docx) con capturas de pantalla, pasos y respuestas observadas en la URL pública de producción.
+
+---
+
 ## 🏗️ Arquitectura del Sistema
 
 ```text
 [ Navegador Web ]
        │
-       ▼ (HTTP / HTTPS puerto 8080 o dominio público)
+       ▼ (HTTPS / Puerto 443 / 80 en producción o 8080 en local)
 ┌────────────────────────────────────────────────────────┐
 │  FRONTEND (Contenedor Nginx 1.30-alpine)              │
 │  ├── public/ (index.html, libros.html, etc., CSS, JS)  │
@@ -65,7 +86,7 @@ Global-Programacion/
 │   ├── test/                   # casos_parcial.http, tests de integración
 │   ├── .dockerignore           # Exclusión de entornos, cache y secretos
 │   ├── Dockerfile              # Imagen python:3.12-alpine con usuario sin privilegios
-│   ├── env.example             # Ejemplo de variables de entorno
+│   ├── env.example             # Ejemplo de variables de entorno (sin credenciales)
 │   └── requirements.txt        # Dependencias Python
 ├── frontend/
 │   ├── public/                 # Archivos estáticos web
@@ -80,10 +101,13 @@ Global-Programacion/
 │   ├── .dockerignore           # Exclusión de archivos locales para build
 │   ├── default.conf.template   # Plantilla Nginx con proxy_pass /api/
 │   └── Dockerfile              # Imagen nginx:1.30-alpine con sustitución de variables
-├── evidencia/                  # Capturas y registros de ejecución
+├── evidencia/
+│   └── Evidencias_Global_Programacion_G01_G07.docx  # Evidencias en producción
+├── .gitignore                  # Exclusión estricta de .env, .venv y temporales
 ├── DEPLOY.md                   # Documentación detallada del despliegue en VPS
+├── Informe_Global_Programacion_Manana-Arranco.pdf   # Informe formal del proyecto
 ├── README.md                   # Esta guía
-└── Consignas Global.pdf
+└── Consignas Global.pdf        # Consignas oficiales de la cátedra
 ```
 
 ---
@@ -91,16 +115,16 @@ Global-Programacion/
 ## ⚙️ Variables de Entorno
 
 ### Backend
-| Variable | Descripción | Ejemplo / Valor por defecto |
-| :--- | :--- | :--- |
-| `DATABASE_URL` | Cadena de conexión asincrónica con driver `asyncpg`. **Obligatoria**. | `postgresql+asyncpg://postgres:postgres@localhost:5432/libreria_db` |
-| `CORS_ORIGINS` | Orígenes HTTP permitidos separados por coma para `CORSMiddleware`. | `http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://localhost:3000` |
-| `SQL_ECHO` | Booleano para activar registro de consultas SQL de SQLAlchemy. | `false` |
+| Variable | Descripción | Ejemplo en Local | Configuración en Producción |
+| :--- | :--- | :--- | :--- |
+| `DATABASE_URL` | Cadena asincrónica con driver `asyncpg`. **Obligatoria**. | `postgresql+asyncpg://postgres:postgres@localhost:5432/libreria_db` | `postgresql+asyncpg://<usr>:<pwd>@libreria-ivy-db:5432/<db>` |
+| `CORS_ORIGINS` | Orígenes HTTP permitidos (separados por coma). | `http://localhost:8080,http://127.0.0.1:8080` | `https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host` |
+| `SQL_ECHO` | Booleano para registro de consultas SQL de SQLAlchemy. | `true` | `false` |
 
 ### Frontend (Nginx)
-| Variable | Descripción | Ejemplo / Valor por defecto |
-| :--- | :--- | :--- |
-| `API_UPSTREAM` | Host y puerto interno del backend (sin `http://` ni barra final). | En local: `host.docker.internal:8000`<br>En Easypanel: `backend:8000` |
+| Variable | Descripción | Ejemplo en Local | Configuración en Producción |
+| :--- | :--- | :--- | :--- |
+| `API_UPSTREAM` | Host y puerto interno del backend (sin `http://` ni `/`). | `host.docker.internal:8000` | `mananaarranco_libreria-ivy-backend:8000` |
 
 ---
 
@@ -112,7 +136,7 @@ Global-Programacion/
 * PostgreSQL corriendo localmente o en un contenedor
 
 ### 2. Iniciar y Preparar el Backend
-1. Abrir una terminal y posicionarse en `backend/`:
+1. Posicionarse en `backend/`:
    ```bash
    cd backend
    ```
@@ -148,9 +172,9 @@ Global-Programacion/
    El script es **idempotente**: inserta editoriales, géneros, autores, libros de prueba y clientes sin duplicaciones.
 
 ### 3. Iniciar el Frontend con Docker y Nginx
-1. Abrir otra terminal y posicionarse en `frontend/`:
+1. Posicionarse en `frontend/`:
    ```bash
-   cd frontend
+   cd ../frontend
    ```
 2. Construir la imagen Docker:
    ```bash
@@ -173,14 +197,14 @@ Global-Programacion/
 
 ## 🧪 Casos de Prueba de la Evaluación (G-01 a G-07)
 
-Los siguientes casos deben verificarse tanto localmente como sobre la URL pública desplegada en Easypanel:
+Los siguientes casos fueron ejecutados y validados sobre la URL pública en producción ([https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host](https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host)):
 
-| Caso | Acción a realizar | Resultado esperado y Comprobación |
+| Caso | Acción Realizada en Producción | Resultado Observado |
 | :--- | :--- | :--- |
-| **G-01 · Catálogo** | 1. Ingresar a `index.html`.<br>2. Filtrar por título (ej. "Rayuela") y verificar listado.<br>3. Probar búsqueda sin coincidencias (ej. "xyzxyz").<br>4. Avanzar y retroceder con los botones de paginación.<br>5. Hacer clic en "Ver autores" o en el título de un libro. | Se visualiza título, ISBN, editorial, género ("Sin clasificar" si es nulo) y precio. Mensaje claro ante búsqueda sin coincidencias. Al abrir detalle, se consulta `GET /api/libros/{id}` mostrando autorías con rol y orden. |
-| **G-02 · Alta de libro** | 1. Ingresar a `libros.html`.<br>2. Seleccionar editorial y género.<br>3. Consultar un autor existente por ID (ej. 1) y agregarlo con rol "autor" y orden 1.<br>4. Enviar formulario con stock > 0.<br>5. Reintentar con el mismo ISBN. | En el alta válida, la API responde `201 Created` y el libro aparece en el catálogo. Al repetir el ISBN, la API rechaza con `409 Conflict` y el mensaje se muestra en `#msg-error`. |
-| **G-03 · Alta de cliente** | 1. Ingresar a `clientes.html`.<br>2. Registrar cliente con nombre y email nuevo.<br>3. Reintentar con el mismo correo.<br>4. En "Consultar cliente por ID", ingresar el ID generado. | El alta exitosa devuelve `201 Created` con el ID asignado. El email repetido devuelve `409 Conflict`. La consulta individual por ID (`GET /api/clientes/{id}`) recupera los datos correctos del cliente. |
-| **G-04 · Venta** | 1. Ingresar a `ventas.html`.<br>2. Ingresar ID de cliente (ej. 1) y pulsar "Buscar cliente".<br>3. Agregar dos libros distintos con cantidades positivas.<br>4. Confirmar la venta.<br>5. Recargar la página e ir a `historial.html`. | El botón se deshabilita mientras se procesa. La API responde `201 Created`, calculando el total y copiando precios unitarios. Tras recargar, la venta aparece en el historial con el mismo total y detalle. |
-| **G-05 · Precio histórico** | 1. Modificar el precio de uno de los libros vendidos mediante `PATCH /libros/{id}`.<br>2. Ir a `historial.html` y abrir el detalle de la venta registrada en G-04. | La venta anterior conserva sus precios unitarios y subtotales históricos intactos en los renglones, demostrando inmutabilidad contable (RN-08). |
-| **G-06 · Rechazo** | 1. En `ventas.html`, intentar enviar una venta con cliente inexistente (ID 9999).<br>2. Intentar venta con renglones de libros duplicados. | La API responde `409 Conflict` ante cliente inexistente y `422 Unprocessable Entity` ante renglones con libro duplicado. **El borrador de la venta se conserva en memoria** para permitir corrección. |
-| **G-07 · Despliegue** | 1. Acceder a la URL pública asignada en Easypanel por HTTPS.<br>2. Verificar `/api/health/ready`.<br>3. Redesplegar el servicio backend. | La URL abre con candado SSL válido, la salud responde `200 OK`, y los datos persisten en la base de datos tras el redespliegue sin pérdidas. |
+| **G-01 · Catálogo** | Búsqueda por título, paginación con `limit` y `offset`, prueba de búsqueda sin coincidencias y apertura de detalle de libro. | Título, ISBN, editorial, género ("Sin clasificar" si es nulo) y precio visibles. Al abrir detalle, se consulta `GET /api/libros/{id}` mostrando autorías completas con rol y orden. |
+| **G-02 · Alta de libro** | Alta con stock > 0, género opcional y autor validado por ID. Reintento con ISBN repetido. | El libro se crea con HTTP 201 y se actualiza el catálogo. El reintento con el mismo ISBN es rechazado con HTTP 409 Conflict. |
+| **G-03 · Alta de cliente** | Creación de cliente nuevo, reintento con el mismo correo y consulta individual por ID. | Creación exitosa (HTTP 201). El email duplicado devuelve HTTP 409 con el detalle correspondiente. La consulta `GET /api/clientes/{id}` recupera los datos correctos. |
+| **G-04 · Venta** | Selección de cliente validado por ID, composición de 2 renglones de libros y confirmación. | Botón deshabilitado durante el envío. La API responde HTTP 201 calculando el total y copiando precios unitarios. Tras recargar, la venta persiste en el historial. |
+| **G-05 · Precio histórico** | Actualización de precio de libro con `PATCH /libros/{id}` y verificación en `historial.html`. | La venta previamente registrada conserva sus precios unitarios y subtotales históricos intactos (inmutabilidad contable, RN-08). |
+| **G-06 · Rechazo** | Envío de venta con cliente inexistente (ID 9999) y prueba de renglones con libro duplicado. | La API devuelve HTTP 409 ante cliente inexistente y HTTP 422 ante libros duplicados. El borrador de la venta se mantiene intacto en memoria. |
+| **G-07 · Despliegue** | Verificación de construcción de imágenes, navegación por HTTPS, respuesta 200 en `/api/health/ready` y persistencia tras redespliegue. | Despliegue operativo y verificado en Easypanel bajo dominio con certificado SSL válido y base de datos persistente. |

@@ -1,133 +1,147 @@
-# Guía de Despliegue en VPS con Easypanel (DEPLOY.md)
+# Guía y Registro de Despliegue en Producción (DEPLOY.md)
 
-Este documento detalla el procedimiento completo, parámetros y configuraciones para desplegar la solución integrada **Librería de Barrio** en un Servidor Privado Virtual (VPS) administrado mediante **Easypanel**.
-
----
-
-## 1. Ficha Técnica del Despliegue
-
-* **Proyecto en Easypanel:** `global-libreria` (o nombre asignado al grupo)
-* **Servicio Backend:**
-  * **Nombre del servicio:** `backend`
-  * **Build Path:** `/backend`
-  * **Builder:** `Dockerfile` (ruta relativa `Dockerfile`)
-  * **Puerto interno:** `8000` (privado, sin dominio público)
-* **Servicio Frontend:**
-  * **Nombre del servicio:** `frontend`
-  * **Build Path:** `/frontend`
-  * **Builder:** `Dockerfile` (ruta relativa `Dockerfile`)
-  * **Puerto interno:** `80`
-  * **Protocolo:** `HTTP` (Easypanel gestiona el certificado SSL y la terminación HTTPS hacia internet)
-* **Proxy y Upstream:**
-  * Variable en Frontend: `API_UPSTREAM=backend:8000`
-  * Nginx reenvía `/api/` hacia `http://${API_UPSTREAM}/`
-* **Base de Datos:**
-  * Servicio PostgreSQL administrado por Easypanel (en la misma red interna).
-  * Variable en Backend: `DATABASE_URL=postgresql+asyncpg://...`
+Este documento registra los parámetros, configuraciones y procedimientos del despliegue oficial de la **Librería de Barrio** en el Servidor Privado Virtual (VPS) administrado mediante **Easypanel** para la **Evaluación Global de Integración y Despliegue — Programación III (UTN)**.
 
 ---
 
-## 2. Paso a Paso: Configuración del Servicio Backend
+## 1. Ficha Técnica y Enlaces de Producción
 
-### 2.1 Creación del servicio App
-1. Dentro del proyecto en Easypanel, hacer clic en **New Service** $\rightarrow$ **App**.
-2. Nombrar el servicio como `backend`.
+* **URL Pública del Frontend (HTTPS):** [https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host](https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host)
+* **Endpoint de Salud / Health Check (/api):** [https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host/api/health/ready](https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host/api/health/ready)
+* **Repositorio Oficial en GitHub:** [https://github.com/IvanaGutierrez/Global-Programacion](https://github.com/IvanaGutierrez/Global-Programacion)
+* **Proyecto en Easypanel:** `mananaarranco`
 
-### 2.2 Configuración de Source y Build
-* **Source:** Seleccionar el repositorio Git del proyecto y la rama a desplegar (ej. `main`).
-* **Build Path:** Escribir `/backend`.
-* **Build Type:** Seleccionar `Dockerfile`.
-* **Dockerfile Path:** `Dockerfile`.
+### Servicios Configurados en Easypanel:
+1. **`libreria-ivy-db` (Base de Datos):**
+   * Tipo: Servicio **Postgres** gestionado internamente por Easypanel.
+   * Red: Privada interna del proyecto `mananaarranco`. Puerto 5432 no expuesto a internet.
+2. **`libreria-ivy-backend` (API REST FastAPI):**
+   * Tipo: Servicio **App**
+   * Build Path: `/backend`
+   * Builder: `Dockerfile`
+   * Puerto interno: `8000` (sin dominio público directo, permanece en la red privada de Easypanel).
+   * Variables de entorno:
+     * `DATABASE_URL=postgresql+asyncpg://...` (conexión interna al servicio Postgres).
+     * `CORS_ORIGINS=https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host`
+     * `SQL_ECHO=false`
+3. **`libreria-ivy-frontend` (Servidor Web Nginx):**
+   * Tipo: Servicio **App**
+   * Build Path: `/frontend`
+   * Builder: `Dockerfile`
+   * Puerto interno: `80`
+   * Protocolo: `HTTP` interno (Easypanel provee terminación TLS/HTTPS con certificado SSL automático).
+   * Dominio público asignado: `mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host`
+   * Variable de enlace upstream:
+     * `API_UPSTREAM=mananaarranco_libreria-ivy-backend:8000`
 
-### 2.3 Variables de Entorno (Environment)
-Cargar las siguientes variables en la pestaña **Environment**:
+> 🔒 **Nota de Seguridad y Buenas Prácticas:**
+> Siguiendo los principios de seguridad de la cátedra, **no se exponen contraseñas ni la cadena `DATABASE_URL` real** en este repositorio ni en la documentación pública. Las credenciales de acceso a la base de datos se configuran de forma estrictamente privada dentro de la sección **Environment** del servicio en Easypanel.
 
+---
+
+## 2. Documentos de Entrega y Evidencias
+
+El repositorio cuenta con la documentación requerida por la cátedra para la corrección y evaluación:
+* 📄 **Informe Integrador de la Evaluación:** [`Informe_Global_Programacion_Manana-Arranco.pdf`](file:///c:/Users/Ivana%20Gutierrez/Documents/Global-Programacion/Informe_Global_Programacion_Manana-Arranco.pdf) ubicado en la raíz del proyecto.
+* 📑 **Evidencias de Casos de Prueba (G-01 a G-07):** [`evidencia/Evidencias_Global_Programacion_G01_G07.docx`](file:///c:/Users/Ivana%20Gutierrez/Documents/Global-Programacion/evidencia/Evidencias_Global_Programacion_G01_G07.docx) con capturas de pantalla y registros de consola de cada caso ejecutado sobre la URL pública en producción.
+
+---
+
+## 3. Configuración y Despliegue del Backend (`libreria-ivy-backend`)
+
+### 3.1 Creación del servicio App
+1. Dentro del proyecto `mananaarranco` en Easypanel, hacer clic en **New Service** $\rightarrow$ **App**.
+2. Asignar el nombre `libreria-ivy-backend`.
+
+### 3.2 Source y Build
+* **Source:** Repositorio GitHub `https://github.com/IvanaGutierrez/Global-Programacion`, rama `main`.
+* **Build Path:** `/backend`
+* **Build Type:** `Dockerfile`
+* **Dockerfile Path:** `Dockerfile`
+
+### 3.3 Variables de Entorno (Environment)
 ```ini
-DATABASE_URL=postgresql+asyncpg://<usuario>:<password>@<host_postgres_interno>:5432/<nombre_db>
-CORS_ORIGINS=*
+DATABASE_URL=postgresql+asyncpg://<usuario>:<password>@libreria-ivy-db:5432/<nombre_db>
+CORS_ORIGINS=https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host
 SQL_ECHO=false
 ```
-> **Nota sobre Base de Datos y Migraciones:** La API utiliza el ciclo de vida asincrónico `lifespan` de FastAPI, ejecutando `SQLModel.metadata.create_all` al arrancar. Por lo tanto, no se requiere ejecutar scripts manuales ni Alembic; todas las tablas, restricciones e índices se generan automáticamente de forma idempotente en el primer inicio.
 
-### 2.4 Despliegue y Carga de Datos Iniciales (Seed)
-1. Hacer clic en **Deploy** y observar los logs de construcción y arranque de Uvicorn en `0.0.0.0:8000`.
-2. Una vez que el contenedor esté corriendo, abrir la pestaña **Shell** (Terminal interna del contenedor) y ejecutar:
+> **Ciclo de vida y migraciones:** La aplicación utiliza el ciclo de vida asincrónico `lifespan` de FastAPI ejecutando `SQLModel.metadata.create_all` al arrancar. Todas las tablas, relaciones e índices se inicializan automáticamente e idempotentemente al iniciar el contenedor.
+
+### 3.4 Carga Inicial de Datos (Seed)
+1. Con el backend desplegado y en ejecución, abrir la pestaña **Shell** del servicio `libreria-ivy-backend`.
+2. Ejecutar la siembra de datos ficticios:
    ```bash
    python -m scripts.seed
    ```
-3. Verificar la salud de la API desde la misma consola:
+3. Comprobar que el endpoint de salud responde `200`:
    ```bash
    python -c "from urllib.request import urlopen; print(urlopen('http://127.0.0.1:8000/health/ready').status)"
    ```
-   El comando debe imprimir `200`.
 
 ---
 
-## 3. Paso a Paso: Configuración del Servicio Frontend
+## 4. Configuración y Despliegue del Frontend (`libreria-ivy-frontend`)
 
-### 3.1 Creación del servicio App
-1. En el mismo proyecto de Easypanel, hacer clic en **New Service** $\rightarrow$ **App**.
-2. Nombrar el servicio como `frontend`.
+### 4.1 Creación del servicio App
+1. En el proyecto `mananaarranco`, seleccionar **New Service** $\rightarrow$ **App**.
+2. Asignar el nombre `libreria-ivy-frontend`.
 
-### 3.2 Configuración de Source y Build
-* **Source:** El mismo repositorio Git y rama.
-* **Build Path:** Escribir `/frontend`.
-* **Build Type:** Seleccionar `Dockerfile`.
-* **Dockerfile Path:** `Dockerfile`.
+### 4.2 Source y Build
+* **Source:** Repositorio GitHub `https://github.com/IvanaGutierrez/Global-Programacion`, rama `main`.
+* **Build Path:** `/frontend`
+* **Build Type:** `Dockerfile`
+* **Dockerfile Path:** `Dockerfile`
 
-### 3.3 Variables de Entorno (Environment)
-Configurar la variable de enlace con el backend:
-
+### 4.3 Variables de Entorno (Environment)
 ```ini
-API_UPSTREAM=backend:8000
+API_UPSTREAM=mananaarranco_libreria-ivy-backend:8000
 ```
-> Si Easypanel nombra los servicios con prefijo de proyecto (por ejemplo `grupo1_backend`), ajustar a `API_UPSTREAM=grupo1_backend:8000`.
+> En la red interna de Docker creada por Easypanel para el proyecto `mananaarranco`, el servicio backend se resuelve bajo el nombre de host `mananaarranco_libreria-ivy-backend:8000`.
 
-### 3.4 Configuración de Dominio (Domains)
-1. En la pestaña **Domains**, asignar el dominio público HTTPS asignado por la cátedra o por Easypanel (ej. `libreria.miapp.com`).
-2. Configurar:
+### 4.4 Configuración de Dominio (Domains)
+1. En la pestaña **Domains**, configurar:
+   * **Domain:** `mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host`
    * **Port:** `80`
    * **Protocol:** `HTTP`
-3. Guardar los cambios y pulsar **Deploy**.
+2. Guardar y pulsar **Deploy**. Easypanel genera automáticamente el certificado SSL mediante Let's Encrypt.
 
 ---
 
-## 4. Verificación y Pruebas en Producción
+## 5. Verificación en Producción
 
-Una vez completado el despliegue del frontend:
-1. **Comprobar Endpoint de Salud:**
-   Abrir en el navegador:
-   `https://<dominio-frontend>/api/health/ready`
-   Debe responder con código HTTP 200 y el JSON:
+1. **Prueba de Salud:**
+   Abrir [https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host/api/health/ready](https://mananaarranco-libreria-ivy-frontend.fqtdaq.easypanel.host/api/health/ready).
+   Respuesta esperada (HTTP 200):
    ```json
-   {"status": "ready", "database": "connected"}
+   {
+     "status": "ready",
+     "database": "connected"
+   }
    ```
-2. **Probar Interfaz Web:**
-   Abrir `https://<dominio-frontend>`:
-   * El catálogo debe listar los libros cargados con el script de siembra.
-   * El detalle de autorías debe abrirse consultando `/api/libros/{id}`.
-   * Probar el registro de una venta con 2 renglones desde `ventas.html` y verificar su aparición en `historial.html`.
+2. **Navegación e Integración de Pantallas:**
+   * **Catálogo:** Acceso a la página principal con paginación funcional y detalle de autores (`GET /api/libros/{id}`).
+   * **Alta de Libros y Clientes:** Creación de registros y validación de restricciones únicas (ISBN y email devolviendo 409).
+   * **Ventas e Historial:** Registro de ventas con dos renglones y consulta de comprobantes con precios unitarios históricos inmutables.
 
 ---
 
-## 5. Procedimiento de Actualización sin Pérdida de Datos
+## 6. Procedimiento de Actualización sin Pérdida de Datos
 
-Dado que la base de datos PostgreSQL reside en un volumen persistente independiente de los contenedores de aplicación:
-
-1. **Actualización de Código:**
-   Hacer `git push` con los nuevos cambios a la rama principal.
-2. **Redespliegue en Easypanel:**
-   * En el servicio modificado (`backend` o `frontend`), presionar **Deploy**.
-   * Easypanel reconstruye la imagen y reemplaza el contenedor sin tiempo de inactividad perceptivo.
-   * Al iniciar el backend, `create_all` detecta las tablas existentes sin reiniciarlas ni borrar registros.
+La base de datos reside en el volumen persistente de `libreria-ivy-db`. Para actualizar el código:
+1. Enviar los cambios al repositorio:
+   ```bash
+   git push origin main
+   ```
+2. En Easypanel, presionar **Deploy** sobre el servicio correspondiente (`libreria-ivy-backend` o `libreria-ivy-frontend`).
+3. El contenedor se reconstruye y se levanta sin alterar las tablas ni los registros almacenados en PostgreSQL.
 
 ---
 
-## 6. Guía de Diagnóstico y Resolución de Problemas
+## 7. Diagnóstico Rápido
 
-| Síntoma | Causa Probable | Solución |
+| Problema | Causa | Solución |
 | :--- | :--- | :--- |
-| **Falla en el build: COPY failed** | Rutas incorrectas o archivos fuera de contexto. | Verificar que en el servicio de Easypanel el **Build Path** sea exactamente `/frontend` (o `/backend`), y que la carpeta `public/` esté dentro de `frontend/`. |
-| **Error 502 Bad Gateway al llamar `/api/...`** | Nginx no puede comunicarse con el backend. | 1. Revisar los logs del backend para asegurar que esté escuchando en `0.0.0.0:8000`.<br>2. Verificar el valor de `API_UPSTREAM` en el frontend (debe coincidir con el nombre interno del servicio backend en Easypanel, ej. `backend:8000`). |
-| **`/api/health/ready` devuelve error 500** | Falla de conexión a PostgreSQL. | Verificar la variable `DATABASE_URL` en el backend, revisando usuario, contraseña y host interno de PostgreSQL. |
-| **Petición devuelve 404 Not Found** | Desajuste en el prefijo o barra final. | Revisar en la pestaña Red de las herramientas de desarrollador que la URL solicitada conserve la barra final requerida (ej. `/api/libros/`). En Nginx, `proxy_pass http://${API_UPSTREAM}/;` con barra final reemplaza `/api/` por `/`. |
+| **502 Bad Gateway en `/api/...`** | Nombre de upstream incorrecto o backend caído. | Verificar que `API_UPSTREAM` coincida con el nombre interno (`mananaarranco_libreria-ivy-backend:8000`) y que el backend esté en estado `running`. |
+| **`/api/health/ready` responde 500** | Problema de conectividad con PostgreSQL. | Revisar que la variable `DATABASE_URL` use el host interno `libreria-ivy-db` y que las credenciales coincidan. |
+| **404 Not Found en peticiones API** | Barra final ausente en rutas. | Verificar que las peticiones conserven la barra final (`/api/libros/`, `/api/ventas/`). En Nginx, `proxy_pass http://${API_UPSTREAM}/;` reenvía con la barra intacta. |

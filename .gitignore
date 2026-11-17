@@ -1,8 +1,24 @@
-﻿.venv/
-__pycache__/
-*.pyc
+# Entornos virtuales
+.venv/
+venv/
+**/venv/
+**/.venv/
+
+# Secretos y variables de entorno
 .env
-backend/.env
-backend/.venv/
+*.env
+**/.env
+**/.env.*
+
+# Python cache y compilados
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+
+# IDE y sistema operativo
 .vscode/
+.idea/
 .DS_Store
+Thumbs.db
